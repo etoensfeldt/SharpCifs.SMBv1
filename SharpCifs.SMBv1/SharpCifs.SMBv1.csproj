@@ -13,7 +13,7 @@
     <Copyright>Copyright (C) 2024 Bo Biene</Copyright>
     <EnablePackageValidation>true</EnablePackageValidation>
     <PackageProjectUrl>https://github.com/BoBiene/SharpCifs.SMBv1</PackageProjectUrl>
-    <PackageLicenseExpression>LGPL-2.1</PackageLicenseExpression>
+    <PackageLicenseExpression>LGPL-2.1-only</PackageLicenseExpression>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugType>full</DebugType>
