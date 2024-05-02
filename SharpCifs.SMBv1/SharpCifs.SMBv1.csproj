@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SharpCifs</RootNamespace>
+    <AssemblyName>SharpCifs.SMBv1</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <TargetFrameworks>net50;net60;net80</TargetFrameworks>
+    <AssemblyTitle>SharpCifs.SMBv1</AssemblyTitle>
+    <Product>SharpCifs.SMBv1</Product>
+    <NeutralLanguage>en</NeutralLanguage>
+    <Authors>ume05rw, Do-Be's, Bo Biene</Authors>
+    <Description>SharpCifs.SMBv1 is a fork of SharpCifs.Std focusing on SMBv1 support, essential for legacy systems not supported by newer Windows versions.</Description>
+    <Copyright>Copyright (C) 2024 Bo Biene</Copyright>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <PackageProjectUrl>https://github.com/BoBiene/SharpCifs.SMBv1</PackageProjectUrl>
+    <PackageLicenseExpression>LGPL-2.1</PackageLicenseExpression>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <DocumentationFile>bin\$(Configuration)\SharpCifs.SMBv1.XML</DocumentationFile>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+
+    <!-- If all members are not documented, you can disable the compiler warnings -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>build\Key.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- A reference to the entire .NET Framework is automatically included -->
+    <None Include="build\Key.snk" />
+  </ItemGroup>
+  
+</Project>
