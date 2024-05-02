@@ -106,12 +106,12 @@ namespace TestSharpCifs
 
 
         /// <summary>
-        /// 共有アクセステスト
+        /// Shared access test
         /// </summary>
         /// <remarks>
-        /// 排他アクセスが出来るかと思ったが、違うらしい。
-        /// 本家jcifsも同じ現象が発生していた。
-        /// 使い方が分からない。
+        /// I thought I could get exclusive access, but it seems not.
+        /// The same phenomenon occurred in the original jcifs.
+        /// I don't know how to use it.
         /// </remarks>
         [TestMethod()]
         public void ShareAccessFlagTest()
@@ -359,10 +359,10 @@ namespace TestSharpCifs
         [TestMethod()]
         public void GetByNameTest()
         {
-            //NG: ローカルポートと共に、宛先ポートを変更してしまう。
+            //NG: The destination port is changed along with the local port.
             //SharpCifs.Config.SetProperty("jcifs.netbios.lport", "2137");
 
-            //ローカルポートのみを変更する。ウェルノウンポートは管理者権限が必要なので。
+            //Change only the local port. Because the well-known port requires administrator privileges.
             SharpCifs.Config.SetProperty("jcifs.smb.client.lport", "2137");
 
             var srvName1 = this.ServerName;
@@ -382,10 +382,10 @@ namespace TestSharpCifs
         [TestMethod()]
         public void GetAllByAddressTest()
         {
-            //NG: ローカルポートと共に、宛先ポートを変更してしまう。
+            //NG: The destination port is changed along with the local port.
             //SharpCifs.Config.SetProperty("jcifs.netbios.lport", "2137");
 
-            //ローカルポートのみを変更する。ウェルノウンポートは管理者権限が必要なので。
+            //Change only the local port. Because the well-known port requires administrator privileges.
             SharpCifs.Config.SetProperty("jcifs.smb.client.lport", "2137");
 
             var srvName1 = Secrets.Get("ServerName");
@@ -425,10 +425,10 @@ namespace TestSharpCifs
         [TestMethod()]
         public void LocalScanTest()
         {
-            //ローカルポートと共に、宛先ポートを変更してしまう。
+            //It would change the destination port along with the local port.
             //SharpCifs.Config.SetProperty("jcifs.netbios.lport", "2137");
 
-            //ローカルポートのみを変更する。ウェルノウンポートは管理者権限が必要なので。
+            //Change only the local port. Because the well-known port requires administrator privileges.
             SharpCifs.Config.SetProperty("jcifs.smb.client.lport", "8137");
 
             SmbFile[] workgroups;
@@ -494,61 +494,61 @@ namespace TestSharpCifs
             string path;
             SmbFile smb;
 
-            //ファイル名 - 加工なし
+            // File name - unprocessed
             url = $"smb://{this.ServerName}/Apps/Others/[BinaryEditor] Stirling.zip";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
             Assert.AreEqual(url.ToUpper(), path.ToUpper());
 
-            //フォルダ名 - 加工なし
+            // folder name - unprocessed
             url = $"smb://{this.ServerName}/FreeArea/SharpCifsTest/";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
             Assert.AreEqual(url.ToUpper(), path.ToUpper());
 
-            //不正なフォルダ名だが、加工なし
+            // Incorrect folder name, but unprocessed
             url = $"smb://{this.ServerName}/FreeArea/SharpCifsTest";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
             Assert.AreEqual(url.ToUpper(), path.ToUpper());
 
-            //相対パスを絶対化
+            // Absolute relative paths
             url = $"smb://{this.ServerName}/FreeArea/SharpCifsTest/../";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
             Assert.AreEqual($"smb://{this.ServerName}/FreeArea/".ToUpper(), path.ToUpper());
 
-            //相対パスを絶対化
+            // Absolute relative paths
             url = $"smb://{this.ServerName}/FreeArea/SharpCifsTest/.././";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
             Assert.AreEqual($"smb://{this.ServerName}/FreeArea/".ToUpper(), path.ToUpper());
 
-            //相対パスを絶対化
+            // Absolute relative paths
             url = $"smb://{this.ServerName}/FreeArea/SharpCifsTest/../.";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
             Assert.AreEqual($"smb://{this.ServerName}/FreeArea/".ToUpper(), path.ToUpper());
 
-            //相対パスを絶対化
+            // Absolute relative paths
             url = $"smb://{this.ServerName}/FreeArea/SharpCifsTest/..";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
             Assert.AreEqual($"smb://{this.ServerName}/FreeArea/".ToUpper(), path.ToUpper());
 
-            //相対パスを絶対化
+            // Absolute relative paths
             url = $"smb://{this.ServerName}/FreeArea/SharpCifsTest/../../Apps/./Others/[BinaryEditor] Stirling.zip";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
             Assert.AreEqual($"smb://{this.ServerName}/Apps/Others/[BinaryEditor] Stirling.zip".ToUpper(), path.ToUpper());
 
-            //実際に存在するかどうかは検証せず、相対パスを絶対化
+            // Absolute relative paths without verifying whether they actually exist or not
             url = $"smb://{this.ServerName}/FreeArea/SharpCifsTest/../../NOT-EXISTS-SHARE/NOT-EXISTS-FILE.txt";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
             Assert.AreEqual($"smb://{this.ServerName}/NOT-EXISTS-SHARE/NOT-EXISTS-FILE.txt".ToUpper(), path.ToUpper());
 
-            //末尾にスペースを入れる
+            // with a space at the end
             url = $"smb://{this.ServerName}/FreeArea/SharpCifsTest  ";
             smb = new SmbFile(url, auth);
             path = smb.GetCanonicalPath();
@@ -559,10 +559,10 @@ namespace TestSharpCifs
         [TestMethod()]
         public void NbtAddressTest()
         {
-            //NG: ローカルポートと共に、宛先ポートを変更してしまう。
+            //NG: The destination port is changed along with the local port.
             //SharpCifs.Config.SetProperty("jcifs.netbios.lport", "2137");
 
-            //ローカルポートのみを変更する。ウェルノウンポートは管理者権限が必要なので。
+            //Change only the local port. Because the well-known port requires administrator privileges.
             SharpCifs.Config.SetProperty("jcifs.smb.client.lport", "8137");
             try
             {
