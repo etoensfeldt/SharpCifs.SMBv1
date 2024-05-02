@@ -2,9 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net80</TargetFramework>
     <OutputType>Exe</OutputType>
-    <PackageId>TestCharpCifsCore</PackageId>
-    <RuntimeFrameworkVersion>1.0.4</RuntimeFrameworkVersion>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
+    <PackageId>SharpCifs.SMBv1.Sample</PackageId>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
