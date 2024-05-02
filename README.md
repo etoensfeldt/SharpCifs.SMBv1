@@ -12,6 +12,10 @@ SharpCifs.SMBv1 allows access to Windows shared folders and NAS over SMBv1 witho
 
 Samples: [http://sharpcifsstd.dobes.jp/#howtouse](http://sharpcifsstd.dobes.jp/#howtouse)
 
+## Nuget
+
+https://www.nuget.org/packages/SharpCifs.SMBv1/
+
 ## Licence
 [LGPL v2.1 Licence](https://github.com/ume05rw/SharpCifs.Std/blob/master/LICENSE)
 
