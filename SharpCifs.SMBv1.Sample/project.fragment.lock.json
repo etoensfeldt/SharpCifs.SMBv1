@@ -1,17 +1,17 @@
 {
   "version": 2,
   "exports": {
-    "SharpCifs.STD1.3/1.0.0": {
+    "SharpCifs.SMBv11.3/1.0.0": {
       "type": "project",
       "framework": ".NETStandard,Version=v1.3",
       "compile": {
-        "bin/Debug/SharpCifs.Std.dll": {}
+        "bin/Debug/SharpCifs.SMBv1.dll": {}
       },
       "runtime": {
-        "bin/Debug/SharpCifs.Std.dll": {}
+        "bin/Debug/SharpCifs.SMBv1.dll": {}
       },
       "contentFiles": {
-        "bin/Debug/SharpCifs.Std.pdb": {
+        "bin/Debug/SharpCifs.SMBv1.pdb": {
           "buildAction": "None",
           "codeLanguage": "any",
           "copyToOutput": true
