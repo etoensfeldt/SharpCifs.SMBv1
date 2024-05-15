@@ -12,14 +12,24 @@ SharpCifs.SMBv1 allows access to Windows shared folders and NAS over SMBv1 witho
 
 Samples: [http://sharpcifsstd.dobes.jp/#howtouse](http://sharpcifsstd.dobes.jp/#howtouse)
 
+## Nuget
+
+https://www.nuget.org/packages/SharpCifs.SMBv1/
+
 ## Licence
 [LGPL v2.1 Licence](https://github.com/ume05rw/SharpCifs.Std/blob/master/LICENSE)
 
 ## Showcase
 [ComicLAN (Xamarin.iOS implements - App Store link)](https://itunes.apple.com/us/app/comiclan-necessary-enough-thats-comic-reader/id1252927463?l=ja&ls=1&mt=8)
 
-## Author
-[Do-Be's](http://dobes.jp)
+
+## Copyright and License
+
+**SharpCifs.SMBv1**
+
+Copyright (C) 2024 Bo Biene
+
+This software is a fork of SharpCifs.Std, originally developed by [Do-Be's](http://dobes.jp) and licensed under the LGPL v2.1. The original project and its source code can be found at: [https://github.com/ume05rw/SharpCifs.Std](https://github.com/ume05rw/SharpCifs.Std).
 
 
 ## Links

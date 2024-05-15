@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net80</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <PackageId>SharpCifs.SMBv1.Sample</PackageId>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Xb.Core.Json" Version="1.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SharpCifs.SMBv1\SharpCifs.SMBv1.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="secrets.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SharpCifs</RootNamespace>
+    <AssemblyName>SharpCifs.SMBv1</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <TargetFrameworks>net50;net60;net80</TargetFrameworks>
+    <AssemblyTitle>SharpCifs.SMBv1</AssemblyTitle>
+    <Product>SharpCifs.SMBv1</Product>
+    <NeutralLanguage>en</NeutralLanguage>
+    <Authors>ume05rw, Do-Be's, Bo Biene</Authors>
+    <Description>SharpCifs.SMBv1 is a fork of SharpCifs.Std focusing on SMBv1 support, essential for legacy systems not supported by newer Windows versions.</Description>
+    <Copyright>Copyright (C) 2024 Bo Biene</Copyright>
+    <!--<EnablePackageValidation>true</EnablePackageValidation>-->
+    <PackageProjectUrl>https://github.com/BoBiene/SharpCifs.SMBv1</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/BoBiene/SharpCifs.SMBv1</RepositoryUrl>
+    <PackageLicenseExpression>LGPL-2.1-only</PackageLicenseExpression>
+    <PackageTags>sharpCifs smb smb1 networking</PackageTags>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>build\Key.snk</AssemblyOriginatorKeyFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>SharpCifs.SMBv1.logo.png</PackageIcon>
+    
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath=""/>
+    <None  Include="..\SharpCifs.SMBv1.logo.png" Link="SharpCifs.SMBv1.logo.png" Pack="true" PackagePath=""/>
+    <!-- A reference to the entire .NET Framework is automatically included -->
+    <None Include="build\Key.snk" />
+  </ItemGroup>
+
+</Project>
