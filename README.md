@@ -1,5 +1,9 @@
 # SharpCifs.SMBv1
 
+[![publish](https://github.com/BoBiene/SharpCifs.SMBv1/actions/workflows/publish.yml/badge.svg?branch=main)](https://github.com/BoBiene/SharpCifs.SMBv1/actions/workflows/publish.yml)
+![NuGet Version](https://img.shields.io/nuget/vpre/SharpCifs.SMBv1)
+
+
 **DEPRECATED!**
 
 This library focuses exclusively on SMB version 1 features, which are not supported by current Windows versions.
