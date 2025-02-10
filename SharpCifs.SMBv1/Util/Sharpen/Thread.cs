@@ -263,6 +263,7 @@ namespace SharpCifs.Util.Sharpen
             //Log.Out("Thread.Dispose");
 
             this._runnable = null;
+            this._tgroup?.Remove(this);
             this._tgroup = null;
             this._task = null;
             this._canceller?.Dispose();
