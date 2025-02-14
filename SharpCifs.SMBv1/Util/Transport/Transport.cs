@@ -18,7 +18,6 @@ using System;
 using System.IO;
 using SharpCifs.Smb;
 using SharpCifs.Util.Sharpen;
-using System.Threading.Tasks;
 
 namespace SharpCifs.Util.Transport
 {
@@ -69,7 +68,7 @@ namespace SharpCifs.Util.Transport
 
         internal string Name = "Transport" + Id++;
 
-        internal Thread Thread;
+        private Thread? _thread = null;
 
         internal TransportException Te;
 
@@ -143,9 +142,9 @@ namespace SharpCifs.Util.Transport
 
         private void Loop()
         {
-            while (Thread.CurrentThread().Equals(Thread))
+            while (Thread.CurrentThread().Equals(_thread))
             {
-                if (Thread.IsCanceled)
+                if (_thread.IsCanceled)
                     break;
 
                 try
@@ -158,7 +157,7 @@ namespace SharpCifs.Util.Transport
 
                     lock (this)
                     {
-                        if (Thread.IsCanceled)
+                        if (_thread.IsCanceled)
                             break;
 
                         Response response = (Response)ResponseMap.Get(key);
@@ -174,7 +173,7 @@ namespace SharpCifs.Util.Transport
                         {
                             DoRecv(response);
 
-                            if (Thread.IsCanceled)
+                            if (_thread.IsCanceled)
                                 break;
 
                             response.IsReceived = true;
@@ -247,27 +246,20 @@ namespace SharpCifs.Util.Transport
                     State = 1;
                     Te = null;
 
-                    if (Thread != null)
+                    Thread thread = new(this);
+                    ClearThread(thread);
+                    
+                    lock (_thread)
                     {
-                        Thread.Cancel(true);
-                        Thread.Dispose();
-                    }
+                        thread.Start(true);
 
-                    Thread = new Thread(this);
-                    Thread.SetDaemon(true);
-                    lock (Thread)
-                    {
-                        Thread.Start(true);
-
-                        Runtime.Wait(Thread, timeout);
+                        Runtime.Wait(_thread, timeout);
                         switch (State)
                         {
                             case 1:
                                 {
                                     State = 0;
-                                    Thread?.Cancel();
-                                    Thread?.Dispose();
-                                    Thread = null;
+                                    ClearThread();
                                     throw new TransportException("Connection timeout");
                                 }
 
@@ -276,9 +268,7 @@ namespace SharpCifs.Util.Transport
                                     if (Te != null)
                                     {
                                         State = 4;
-                                        Thread?.Cancel();
-                                        Thread?.Dispose();
-                                        Thread = null;
+                                        ClearThread();
                                         throw Te;
                                     }
                                     State = 3;
@@ -290,9 +280,7 @@ namespace SharpCifs.Util.Transport
                 catch (Exception ie)
                 {
                     State = 0;
-                    Thread?.Cancel();
-                    Thread?.Dispose();
-                    Thread = null;
+                    ClearThread();
                     throw new TransportException(ie);
                 }
                 finally
@@ -304,9 +292,7 @@ namespace SharpCifs.Util.Transport
                             Log.WriteLine("Invalid state: " + State);
                         }
                         State = 0;
-                        Thread?.Cancel();
-                        Thread?.Dispose();
-                        Thread = null;
+                        ClearThread();
                     }
                 }
             }
@@ -351,9 +337,7 @@ namespace SharpCifs.Util.Transport
 
                     case 4:
                         {
-                            Thread?.Cancel();
-                            Thread?.Dispose();
-                            Thread = null;
+                            ClearThread();
                             State = 0;
                             break;
                         }
@@ -364,9 +348,7 @@ namespace SharpCifs.Util.Transport
                             {
                                 Log.WriteLine("Invalid state: " + State);
                             }
-                            Thread?.Cancel();
-                            Thread?.Dispose();
-                            Thread = null;
+                            ClearThread();
                             State = 0;
                             break;
                         }
@@ -414,9 +396,7 @@ namespace SharpCifs.Util.Transport
 
                     case 4:
                         {
-                            Thread?.Cancel();
-                            Thread?.Dispose();
-                            Thread = null;
+                            ClearThread();
                             State = 0;
                             break;
                         }
@@ -427,9 +407,7 @@ namespace SharpCifs.Util.Transport
                             {
                                 Log.WriteLine("Invalid state: " + State);
                             }
-                            Thread?.Cancel();
-                            Thread?.Dispose();
-                            Thread = null;
+                            ClearThread();
                             State = 0;
                             break;
                         }
@@ -465,7 +443,7 @@ namespace SharpCifs.Util.Transport
                 {
                     if (!runThread.IsCanceled)
                     {
-                        if (!runThread.Equals(Thread))
+                        if (!runThread.Equals(_thread))
                         {
                             if (ex0 != null)
                             {
@@ -496,6 +474,13 @@ namespace SharpCifs.Util.Transport
         public override string ToString()
         {
             return Name;
+        }
+
+        private void ClearThread(Thread? replacement = null)
+        {
+            Thread? oldThread = System.Threading.Interlocked.Exchange(ref _thread, replacement);
+            oldThread?.Cancel();
+            oldThread?.Dispose();
         }
     }
 }

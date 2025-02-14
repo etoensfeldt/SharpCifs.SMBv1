@@ -3071,7 +3071,6 @@ namespace SharpCifs.Smb
             {
             }
             w = new WriterThread(this);
-            w.SetDaemon(true);
             w.Start(true);
 
             SmbTransport t1 = Tree.Session.transport;

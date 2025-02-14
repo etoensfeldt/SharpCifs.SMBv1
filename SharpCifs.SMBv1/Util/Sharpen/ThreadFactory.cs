@@ -7,7 +7,6 @@ namespace SharpCifs.Util.Sharpen
         public Thread NewThread(IRunnable r)
         {
             Thread t = new Thread(r);
-            t.SetDaemon(true);
             t.Start(true);
 
             return t;

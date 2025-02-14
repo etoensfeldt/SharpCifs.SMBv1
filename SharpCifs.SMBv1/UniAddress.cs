@@ -226,8 +226,6 @@ namespace SharpCifs
             int type = NbtAddress.IsWins(svr) ? unchecked(0x1b) : unchecked(0x1d);
             QueryThread q1X = new QueryThread(sem, name, type, null, svr);
             QueryThread q20 = new QueryThread(sem, name, unchecked(0x20), null, svr);
-            q1X.SetDaemon(true);
-            q20.SetDaemon(true);
             try
             {
                 lock (sem)

@@ -260,7 +260,6 @@ namespace SharpCifs.Netbios
                     }
 
                     _thread = new Thread(this);
-                    _thread.SetDaemon(true);
                     _thread.Start(true);
                 }
             }
@@ -786,7 +785,6 @@ namespace SharpCifs.Netbios
             }
 
             _thread = new Thread(this);
-            _thread.SetDaemon(true);
             _thread.Start(true);
 
             _autoResetWaitReceive.WaitOne();
