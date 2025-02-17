@@ -138,13 +138,13 @@ namespace SharpCifs.Smb
 
         internal override int WriteParameterWordsWireFormat(byte[] dst, int dstIndex)
         {
-            if (_session.transport.Server.Security == SmbConstants.SecurityShare
+            if (_session.Transport.Server.Security == SmbConstants.SecurityShare
                 && (_session.Auth.HashesExternal || _session.Auth.Password.Length > 0))
             {
-                if (_session.transport.Server.EncryptedPasswords)
+                if (_session.Transport.Server.EncryptedPasswords)
                 {
                     // encrypted
-                    _password = _session.Auth.GetAnsiHash(_session.transport.Server.EncryptionKey);
+                    _password = _session.Auth.GetAnsiHash(_session.Transport.Server.EncryptionKey);
                     _passwordLength = _password.Length;
                 }
                 else
@@ -174,7 +174,7 @@ namespace SharpCifs.Smb
         internal override int WriteBytesWireFormat(byte[] dst, int dstIndex)
         {
             int start = dstIndex;
-            if (_session.transport.Server.Security == SmbConstants.SecurityShare
+            if (_session.Transport.Server.Security == SmbConstants.SecurityShare
                 && (_session.Auth.HashesExternal || _session.Auth.Password.Length > 0))
             {
                 Array.Copy(_password,

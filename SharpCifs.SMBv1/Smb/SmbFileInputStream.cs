@@ -91,8 +91,8 @@ namespace SharpCifs.Smb
             {
                 file.Connect0();
             }
-            _readSize = Math.Min(file.Tree.Session.transport.RcvBufSize - 70,
-                                 file.Tree.Session.transport.Server.MaxBufferSize - 70);
+            _readSize = Math.Min(file.Tree.Session.Transport.RcvBufSize - 70,
+                                 file.Tree.Session.Transport.Server.MaxBufferSize - 70);
         }
 
         protected internal virtual IOException SeToIoe(SmbException se)

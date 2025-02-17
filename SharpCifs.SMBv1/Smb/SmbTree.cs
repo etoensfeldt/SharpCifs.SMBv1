@@ -33,7 +33,7 @@ namespace SharpCifs.Smb
 
         internal string Service0;
 
-        internal SmbSession Session;
+        internal readonly SmbSession Session;
 
         internal bool InDfs;
 
@@ -41,7 +41,7 @@ namespace SharpCifs.Smb
 
         internal int TreeNum;
 
-        internal SmbTree(SmbSession session, string share, string service)
+        internal SmbTree(SmbSession session, string share, string? service)
         {
             // used by SmbFile.isOpen
             this.Session = session;
@@ -54,7 +54,7 @@ namespace SharpCifs.Smb
             ConnectionState = 0;
         }
 
-        internal virtual bool Matches(string share, string service)
+        internal virtual bool Matches(string share, string? service)
         {
             return Runtime.EqualsIgnoreCase(this.Share, share)
                     && (service == null
@@ -75,7 +75,7 @@ namespace SharpCifs.Smb
         /// <exception cref="SharpCifs.Smb.SmbException"></exception>
         internal virtual void Send(ServerMessageBlock request, ServerMessageBlock response)
         {
-            lock (Session.Transport())
+            lock (Session.Transport)
             {
                 if (response != null)
                 {
@@ -140,7 +140,7 @@ namespace SharpCifs.Smb
                     && !string.IsNullOrEmpty(request.Path))
                 {
                     request.Flags2 = SmbConstants.Flags2ResolvePathsInDfs;
-                    request.Path = '\\' + Session.Transport().TconHostName
+                    request.Path = '\\' + Session.Transport.TconHostName
                                     + '\\' + Share + request.Path;
                 }
                 try
@@ -162,7 +162,7 @@ namespace SharpCifs.Smb
         internal virtual void TreeConnect(ServerMessageBlock andx,
                                           ServerMessageBlock andxResponse)
         {
-            lock (Session.Transport())
+            lock (Session.Transport)
             {
                 string unc;
                 while (ConnectionState != 0)
@@ -174,7 +174,7 @@ namespace SharpCifs.Smb
                     }
                     try
                     {
-                        Runtime.Wait(Session.transport);
+                        Runtime.Wait(Session.Transport);
                     }
                     catch (Exception ie)
                     {
@@ -185,12 +185,12 @@ namespace SharpCifs.Smb
                 // trying ...
                 try
                 {
-                    Session.transport.Connect();
-                    unc = "\\\\" + Session.transport.TconHostName + '\\' + Share;
+                    Session.Transport.Connect();
+                    unc = "\\\\" + Session.Transport.TconHostName + '\\' + Share;
                     Service = Service0;
-                    if (Session.transport.Log.Level >= 4)
+                    if (Session.Transport.Log.Level >= 4)
                     {
-                        Session.transport.Log.WriteLine(
+                        Session.Transport.Log.WriteLine(
                             "treeConnect: unc=" + unc
                             + ",service=" + Service);
                     }
@@ -217,7 +217,7 @@ namespace SharpCifs.Smb
 
         internal virtual void TreeDisconnect(bool inError)
         {
-            lock (Session.Transport())
+            lock (Session.Transport)
             {
                 if (ConnectionState != 2)
                 {
@@ -234,16 +234,16 @@ namespace SharpCifs.Smb
                     }
                     catch (SmbException se)
                     {
-                        if (Session.transport.Log.Level > 1)
+                        if (Session.Transport.Log.Level > 1)
                         {
-                            Runtime.PrintStackTrace(se, Session.transport.Log);
+                            Runtime.PrintStackTrace(se, Session.Transport.Log);
                         }
                     }
                 }
                 InDfs = false;
                 InDomainDfs = false;
                 ConnectionState = 0;
-                Runtime.NotifyAll(Session.transport);
+                Runtime.NotifyAll(Session.Transport);
             }
         }
 

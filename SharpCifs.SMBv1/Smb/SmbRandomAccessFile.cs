@@ -79,8 +79,8 @@ namespace SharpCifs.Smb
                 }
             }
             file.Open(_openFlags, _access, SmbFile.AttrNormal, _options);
-            _readSize = file.Tree.Session.transport.RcvBufSize - 70;
-            _writeSize = file.Tree.Session.transport.SndBufSize - 70;
+            _readSize = file.Tree.Session.Transport.RcvBufSize - 70;
+            _writeSize = file.Tree.Session.Transport.SndBufSize - 70;
             _fp = 0L;
         }
 

@@ -18,6 +18,9 @@ using System;
 using System.IO;
 using SharpCifs.Smb;
 using SharpCifs.Util.Sharpen;
+using Interlocked = System.Threading.Interlocked;
+
+#nullable enable
 
 namespace SharpCifs.Util.Transport
 {
@@ -35,17 +38,17 @@ namespace SharpCifs.Util.Transport
     /// </remarks>
     public abstract class Transport : IRunnable
     {
-        internal static int Id;
+        private static int s_id;
 
-        //internal static LogStream log = LogStream.GetInstance();
+        private readonly string _name = $"Transport{Interlocked.Increment(ref s_id)}";
 
-        public LogStream Log
-        {
-            get
-            {
-                return LogStream.GetInstance();
-            }
-        }
+        private int _state;
+        private Thread? _thread = null;
+        private TransportException? _transportEx;
+
+        protected internal Hashtable _responseMap = new Hashtable();
+
+        public LogStream Log => LogStream.GetInstance();
 
         /// <exception cref="System.IO.IOException"></exception>
         public static int Readn(InputStream @in, byte[] b, int off, int len)
@@ -64,21 +67,11 @@ namespace SharpCifs.Util.Transport
             return i;
         }
 
-        internal int State;
-
-        internal string Name = "Transport" + Id++;
-
-        private Thread? _thread = null;
-
-        internal TransportException Te;
-
-        protected internal Hashtable ResponseMap = new Hashtable();
-
         /// <exception cref="System.IO.IOException"></exception>
         protected internal abstract void MakeKey(ServerMessageBlock request);
 
         /// <exception cref="System.IO.IOException"></exception>
-        protected internal abstract ServerMessageBlock PeekKey();
+        protected internal abstract ServerMessageBlock? PeekKey();
 
         /// <exception cref="System.IO.IOException"></exception>
         protected internal abstract void DoSend(ServerMessageBlock request);
@@ -98,7 +91,7 @@ namespace SharpCifs.Util.Transport
                 response.IsReceived = false;
                 try
                 {
-                    ResponseMap.Put(request, response);
+                    _responseMap.Put(request, response);
                     DoSend(request);
                     response.Expiration = Runtime.CurrentTimeMillis() + timeout;
                     while (!response.IsReceived)
@@ -108,7 +101,7 @@ namespace SharpCifs.Util.Transport
                         if (timeout <= 0)
                         {
                             throw new TransportException(
-                                Name + " timedout waiting for response to " + request);
+                                _name + " timedout waiting for response to " + request);
                         }
                     }
                 }
@@ -135,7 +128,7 @@ namespace SharpCifs.Util.Transport
                 finally
                 {
                     //Sharpen.Collections.Remove(response_map, request);
-                    ResponseMap.Remove(request);
+                    _responseMap.Remove(request);
                 }
             }
         }
@@ -160,7 +153,7 @@ namespace SharpCifs.Util.Transport
                         if (thread.IsCanceled)
                             break;
 
-                        Response response = (Response)ResponseMap.Get(key);
+                        Response response = (Response)_responseMap.Get(key);
                         if (response == null)
                         {
                             if (Log.Level >= 4)
@@ -218,7 +211,7 @@ namespace SharpCifs.Util.Transport
                 Thread? thread = null;
                 try
                 {
-                    switch (State)
+                    switch (_state)
                     {
                         case 0:
                             {
@@ -233,19 +226,19 @@ namespace SharpCifs.Util.Transport
                         case 4:
                             {
                                 // already connected
-                                State = 0;
-                                throw new TransportException("Connection in error", Te);
+                                _state = 0;
+                                throw new TransportException("Connection in error", _transportEx);
                             }
 
                         default:
                             {
                                 //TransportException te = new TransportException("Invalid state: " + state);
-                                State = 0;
-                                throw new TransportException("Invalid state: " + State);
+                                _state = 0;
+                                throw new TransportException("Invalid state: " + _state);
                             }
                     }
-                    State = 1;
-                    Te = null;
+                    _state = 1;
+                    _transportEx = null;
 
                     thread = new(this);
                     ClearThread(thread);
@@ -258,44 +251,49 @@ namespace SharpCifs.Util.Transport
                             Runtime.Wait(thread, timeout);
                     }
 
-                    switch (State)
+                    switch (_state)
                     {
                         case 1:
                         {
-                            State = 0;
+                            _state = 0;
                             CompareClearThread(thread);
                             throw new TransportException("Connection timeout");
                         }
 
                         case 2:
                         {
-                            if (Te != null)
+                            if (_transportEx != null)
                             {
-                                State = 4;
+                                _state = 4;
                                 CompareClearThread(thread);
-                                throw Te;
+                                throw _transportEx;
                             }
-                            State = 3;
+                            _state = 3;
                             return;
                         }
                     }
                 }
                 catch (Exception ie)
                 {
-                    State = 0;
-                    CompareClearThread(thread);
+                    _state = 0;
+
+                    if (thread is not null)
+                        CompareClearThread(thread);
+
                     throw new TransportException(ie);
                 }
                 finally
                 {
-                    if (State != 0 && State != 3 && State != 4)
+                    if (_state != 0 && _state != 3 && _state != 4)
                     {
                         if (Log.Level >= 1)
                         {
-                            Log.WriteLine("Invalid state: " + State);
+                            Log.WriteLine("Invalid state: " + _state);
                         }
-                        State = 0;
-                        CompareClearThread(thread);
+                        _state = 0;
+
+                        if (thread is not null)
+                            CompareClearThread(thread);
                     }
                 }
             }
@@ -307,8 +305,8 @@ namespace SharpCifs.Util.Transport
 
             if (hard)
             {
-                IOException ioe = null;
-                switch (State)
+                IOException? ioe = null;
+                switch (_state)
                 {
                     case 0:
                         {
@@ -323,7 +321,7 @@ namespace SharpCifs.Util.Transport
 
                     case 3:
                         {
-                            if (ResponseMap.Count != 0 && !hard)
+                            if (_responseMap.Count != 0 && !hard)
                             {
                                 break;
                             }
@@ -341,7 +339,7 @@ namespace SharpCifs.Util.Transport
                     case 4:
                         {
                             ClearThread();
-                            State = 0;
+                            _state = 0;
                             break;
                         }
 
@@ -349,10 +347,10 @@ namespace SharpCifs.Util.Transport
                         {
                             if (Log.Level >= 1)
                             {
-                                Log.WriteLine("Invalid state: " + State);
+                                Log.WriteLine("Invalid state: " + _state);
                             }
                             ClearThread();
-                            State = 0;
+                            _state = 0;
                             break;
                         }
                 }
@@ -366,8 +364,8 @@ namespace SharpCifs.Util.Transport
 
             lock (this)
             {
-                IOException ioe = null;
-                switch (State)
+                IOException? ioe = null;
+                switch (_state)
                 {
                     case 0:
                         {
@@ -382,7 +380,7 @@ namespace SharpCifs.Util.Transport
 
                     case 3:
                         {
-                            if (ResponseMap.Count != 0 && !hard)
+                            if (_responseMap.Count != 0 && !hard)
                             {
                                 break;
                             }
@@ -400,7 +398,7 @@ namespace SharpCifs.Util.Transport
                     case 4:
                         {
                             ClearThread();
-                            State = 0;
+                            _state = 0;
                             break;
                         }
 
@@ -408,10 +406,10 @@ namespace SharpCifs.Util.Transport
                         {
                             if (Log.Level >= 1)
                             {
-                                Log.WriteLine("Invalid state: " + State);
+                                Log.WriteLine("Invalid state: " + _state);
                             }
                             ClearThread();
-                            State = 0;
+                            _state = 0;
                             break;
                         }
                 }
@@ -429,7 +427,7 @@ namespace SharpCifs.Util.Transport
             if (runThread.IsCanceled)
                 return;
 
-            Exception ex0 = null;
+            Exception? ex0 = null;
             try
             {
                 DoConnect();
@@ -459,9 +457,9 @@ namespace SharpCifs.Util.Transport
                         }
                         if (ex0 != null)
                         {
-                            Te = new TransportException(ex0);
+                            _transportEx = new TransportException(ex0);
                         }
-                        State = 2;
+                        _state = 2;
                         // run connected
                         Runtime.Notify(runThread);
                     }
@@ -476,19 +474,19 @@ namespace SharpCifs.Util.Transport
 
         public override string ToString()
         {
-            return Name;
+            return _name;
         }
 
         private void ClearThread(Thread? replacement = null)
         {
-            Thread? oldThread = System.Threading.Interlocked.Exchange(ref _thread, replacement);
+            Thread? oldThread = Interlocked.Exchange(ref _thread, replacement);
             oldThread?.Cancel(true);
             oldThread?.Dispose();
         }
 
         private void CompareClearThread(Thread comparand, Thread? replacement = null)
         {
-            if (System.Threading.Interlocked.CompareExchange(ref _thread, replacement, comparand) == comparand)
+            if (Interlocked.CompareExchange(ref _thread, replacement, comparand) == comparand)
             {
                 comparand.Cancel(true);
                 comparand.Dispose();

@@ -333,8 +333,6 @@ namespace SharpCifs.Smb
         public static int ResponseTimeout { get; internal set; }
             = Config.GetInt("jcifs.smb.client.responseTimeout", DefaultResponseTimeout);
 
-        public static readonly List<SmbTransport> Connections = new List<SmbTransport>();
-
         public static int SsnLimit { get; internal set; }
             = Config.GetInt("jcifs.smb.client.ssnLimit", DefaultSsnLimit);
 
@@ -352,7 +350,6 @@ namespace SharpCifs.Smb
 
         public static readonly int VcNumber = 1;
 
-        public static SmbTransport NullTransport = new SmbTransport(null, 0, null, 0);
         // file attribute encoding
         // extended file attribute encoding(others same as above)
         // access mask encoding

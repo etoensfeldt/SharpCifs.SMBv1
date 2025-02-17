@@ -15,11 +15,12 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
-using System.Net;
 using SharpCifs.Netbios;
 using SharpCifs.Util.Sharpen;
+
+#nullable enable
 
 namespace SharpCifs.Smb
 {
@@ -40,7 +41,7 @@ namespace SharpCifs.Smb
         private static readonly int CachePolicy
             = Config.GetInt("jcifs.netbios.cachePolicy", 60 * 10) * 60;
 
-        internal static NbtAddress[] DcList;
+        internal static NbtAddress?[]? DcList = null;
 
         internal static long DcListExpiration;
 
@@ -101,21 +102,21 @@ namespace SharpCifs.Smb
                             }
                         }
                     }
-                    int max = Math.Min(DcList.Length, LookupRespLimit);
+                    int max = Math.Min(DcList?.Length ?? 0, LookupRespLimit);
                     for (int j = 0; j < max; j++)
                     {
                         int i = DcListCounter++ % max;
-                        if (DcList[i] != null)
+                        if (DcList![i] is NbtAddress dc)
                         {
                             try
                             {
-                                return Interrogate(DcList[i]);
+                                return Interrogate(dc);
                             }
                             catch (SmbException se)
                             {
                                 if (SmbTransport.LogStatic.Level >= 2)
                                 {
-                                    SmbTransport.LogStatic.WriteLine("Failed validate DC: " + DcList[i]);
+                                    SmbTransport.LogStatic.WriteLine("Failed validate DC: " + dc);
                                     if (SmbTransport.LogStatic.Level > 2)
                                     {
                                         Runtime.PrintStackTrace(se, SmbTransport.LogStatic);
@@ -165,6 +166,7 @@ namespace SharpCifs.Smb
         /// last <a href="../../../faq.html">FAQ</a> question.
         /// <p>
         /// See also the <tt>jcifs.smb.client.logonShare</tt> property.
+        /// </p>
         /// </remarks>
         /// <exception cref="SmbException"></exception>
         public static void Logon(UniAddress dc, NtlmPasswordAuthentication auth)
@@ -203,103 +205,56 @@ namespace SharpCifs.Smb
         }
 
 
-        internal int ConnectionState;
+        private int _connectionState = 0;
 
-        internal int Uid;
+        private int _uid;
 
-        internal List<object> Trees;
+        private readonly ConcurrentBag<SmbTree> _trees = [];
 
-        private UniAddress _address;
-
-        private int _port;
-
-        private int _localPort;
-
-        private IPAddress _localAddr;
-
-        internal SmbTransport transport;
+        private readonly SmbTransport _transport;
+        public SmbTransport Transport => _transport;
 
         internal NtlmPasswordAuthentication Auth;
 
         internal long Expiration;
 
-        internal string NetbiosName;
+        internal string? NetbiosName = null;
 
-        internal SmbSession(UniAddress address,
-                            int port,
-                            IPAddress localAddr,
-                            int localPort,
-                            NtlmPasswordAuthentication auth)
+        internal SmbSession(NtlmPasswordAuthentication auth, SmbTransport transport)
         {
-            // Transport parameters allows trans to be removed from CONNECTIONS
-            this._address = address;
-            this._port = port;
-            this._localAddr = localAddr;
-            this._localPort = localPort;
-            this.Auth = auth;
-            Trees = new List<object>();
-            ConnectionState = 0;
+            Auth = auth;
+            _transport = transport;
         }
 
-        internal SmbTree GetSmbTree(string share, string service)
+        internal SmbTree GetSmbTree(string share, string? service)
         {
             lock (this)
             {
-                SmbTree t;
-                if (share == null)
+                share ??= "IPC$";
+
+                foreach (SmbTree tree in _trees)
                 {
-                    share = "IPC$";
-                }
-                /*
-                for (IEnumeration e = trees.GetEnumerator(); e.MoveNext(); )
-				{
-					t = (SmbTree)e.Current;
-					if (t.Matches(share, service))
-					{
-						return t;
-					}
-				}
-                */
-                foreach (var e in Trees)
-                {
-                    t = (SmbTree)e;
-                    if (t.Matches(share, service))
+                    if (tree.Matches(share, service))
                     {
-                        return t;
+                        return tree;
                     }
                 }
 
-                t = new SmbTree(this, share, service);
-                Trees.Add(t);
-                return t;
+                SmbTree newTree = new(this, share, service);
+                _trees.Add(newTree);
+                return newTree;
             }
         }
 
         internal bool Matches(NtlmPasswordAuthentication auth)
         {
-            return this.Auth == auth || this.Auth.Equals(auth);
-        }
-
-        internal SmbTransport Transport()
-        {
-            lock (this)
-            {
-                if (transport == null)
-                {
-                    transport = SmbTransport.GetSmbTransport(_address,
-                                                             _port,
-                                                             _localAddr,
-                                                             _localPort,
-                                                             null);
-                }
-                return transport;
-            }
+            return Auth == auth || Auth.Equals(auth);
         }
 
         /// <exception cref="SharpCifs.Smb.SmbException"></exception>
-        internal void Send(ServerMessageBlock request, ServerMessageBlock response)
+        internal void Send(ServerMessageBlock request, ServerMessageBlock? response)
         {
-            lock (Transport())
+            lock (_transport)
             {
                 if (response != null)
                 {
@@ -319,13 +274,13 @@ namespace SharpCifs.Smb
                         tcax.path = "\\\\" + NetbiosName + "\\IPC$";
                     }
                 }
-                request.Uid = Uid;
+                request.Uid = _uid;
                 request.Auth = Auth;
                 try
                 {
-                    transport.Send(request, response);
+                    _transport.Send(request, response);
                 }
-                catch (SmbException se)
+                catch (SmbException)
                 {
                     if (request is SmbComTreeConnectAndX)
                     {
@@ -338,43 +293,43 @@ namespace SharpCifs.Smb
         }
 
         /// <exception cref="SharpCifs.Smb.SmbException"></exception>
-        internal void SessionSetup(ServerMessageBlock andx, ServerMessageBlock andxResponse)
+        internal void SessionSetup(ServerMessageBlock andx, ServerMessageBlock? andxResponse)
         {
-            lock (Transport())
+            lock (_transport)
             {
-                NtlmContext nctx = null;
-                SmbException ex = null;
+                NtlmContext? nctx = null;
+                SmbException? ex = null;
                 SmbComSessionSetupAndX request;
                 SmbComSessionSetupAndXResponse response;
-                byte[] token = new byte[0];
+                byte[] token = Array.Empty<byte>();
                 int state = 10;
-                while (ConnectionState != 0)
+                while (_connectionState != 0)
                 {
-                    if (ConnectionState == 2 || ConnectionState == 3)
+                    if (_connectionState == 2 || _connectionState == 3)
                     {
                         // connected or disconnecting
                         return;
                     }
                     try
                     {
-                        Runtime.Wait(transport);
+                        Runtime.Wait(_transport);
                     }
                     catch (Exception ie)
                     {
                         throw new SmbException(ie.Message, ie);
                     }
                 }
-                ConnectionState = 1;
+                _connectionState = 1;
                 // trying ...
                 try
                 {
-                    transport.Connect();
-                    if (transport.Log.Level >= 4)
+                    _transport.Connect();
+                    if (_transport.Log.Level >= 4)
                     {
-                        transport.Log.WriteLine("sessionSetup: accountName=" + Auth.Username
+                        _transport.Log.WriteLine("sessionSetup: accountName=" + Auth.Username
                                                 + ",primaryDomain=" + Auth.Domain);
                     }
-                    Uid = 0;
+                    _uid = 0;
                     do
                     {
                         switch (state)
@@ -382,36 +337,36 @@ namespace SharpCifs.Smb
                             case 10:
                                 {
                                     if (Auth != NtlmPasswordAuthentication.Anonymous
-                                        && transport.HasCapability(SmbConstants.CapExtendedSecurity))
+                                        && _transport.HasCapability(SmbConstants.CapExtendedSecurity))
                                     {
                                         state = 20;
                                         break;
                                     }
                                     request = new SmbComSessionSetupAndX(this, andx, Auth);
                                     response = new SmbComSessionSetupAndXResponse(andxResponse);
-                                    if (transport.IsSignatureSetupRequired(Auth))
+                                    if (_transport.IsSignatureSetupRequired(Auth))
                                     {
                                         if (Auth.HashesExternal
                                             && NtlmPasswordAuthentication.DefaultPassword
                                                 != NtlmPasswordAuthentication.Blank)
                                         {
-                                            transport.GetSmbSession(NtlmPasswordAuthentication.Default)
+                                            _transport.GetSmbSession(NtlmPasswordAuthentication.Default)
                                                      .GetSmbTree(LogonShare, null)
                                                      .TreeConnect(null, null);
                                         }
                                         else
                                         {
                                             byte[] signingKey
-                                                = Auth.GetSigningKey(transport.Server.EncryptionKey);
+                                                = Auth.GetSigningKey(_transport.Server.EncryptionKey);
                                             request.Digest = new SigningDigest(signingKey, false);
                                         }
                                     }
                                     request.Auth = Auth;
                                     try
                                     {
-                                        transport.Send(request, response);
+                                        _transport.Send(request, response);
                                     }
-                                    catch (SmbAuthException sae)
+                                    catch (SmbAuthException)
                                     {
                                         throw;
                                     }
@@ -421,7 +376,7 @@ namespace SharpCifs.Smb
                                     }
                                     if (response.IsLoggedInAsGuest
                                         && Runtime.EqualsIgnoreCase("GUEST", Auth.Username) == false
-                                        && transport.Server.Security != SmbConstants.SecurityShare
+                                        && _transport.Server.Security != SmbConstants.SecurityShare
                                         && Auth != NtlmPasswordAuthentication.Anonymous)
                                     {
                                         throw new SmbAuthException(NtStatus.NtStatusLogonFailure);
@@ -430,12 +385,12 @@ namespace SharpCifs.Smb
                                     {
                                         throw ex;
                                     }
-                                    Uid = response.Uid;
+                                    _uid = response.Uid;
                                     if (request.Digest != null)
                                     {
-                                        transport.Digest = request.Digest;
+                                        _transport.Digest = request.Digest;
                                     }
-                                    ConnectionState = 2;
+                                    _connectionState = 2;
                                     state = 0;
                                     break;
                                 }
@@ -445,7 +400,7 @@ namespace SharpCifs.Smb
                                     if (nctx == null)
                                     {
                                         bool doSigning
-                                            = (transport.Flags2
+                                            = (_transport.Flags2
                                                & SmbConstants.Flags2SecuritySignatures) != 0;
                                         nctx = new NtlmContext(Auth, doSigning);
                                     }
@@ -456,31 +411,31 @@ namespace SharpCifs.Smb
                                     if (nctx.IsEstablished())
                                     {
                                         NetbiosName = nctx.GetNetbiosName();
-                                        ConnectionState = 2;
+                                        _connectionState = 2;
                                         state = 0;
                                         break;
                                     }
                                     try
                                     {
-                                        token = nctx.InitSecContext(token, 0, token.Length);
+                                        token = nctx.InitSecContext(token, 0, token!.Length);
                                     }
-                                    catch (SmbException se)
+                                    catch (SmbException)
                                     {
                                         try
                                         {
-                                            transport.Disconnect(true);
+                                            _transport.Disconnect(true);
                                         }
                                         catch (IOException)
                                         {
                                         }
-                                        Uid = 0;
+                                        _uid = 0;
                                         throw;
                                     }
                                     if (token != null)
                                     {
                                         request = new SmbComSessionSetupAndX(this, null, token);
                                         response = new SmbComSessionSetupAndXResponse(null);
-                                        if (transport.IsSignatureSetupRequired(Auth))
+                                        if (_transport.IsSignatureSetupRequired(Auth))
                                         {
                                             byte[] signingKey = nctx.GetSigningKey();
                                             if (signingKey != null)
@@ -488,13 +443,13 @@ namespace SharpCifs.Smb
                                                 request.Digest = new SigningDigest(signingKey, true);
                                             }
                                         }
-                                        request.Uid = Uid;
-                                        Uid = 0;
+                                        request.Uid = _uid;
+                                        _uid = 0;
                                         try
                                         {
-                                            transport.Send(request, response);
+                                            _transport.Send(request, response);
                                         }
-                                        catch (SmbAuthException sae)
+                                        catch (SmbAuthException)
                                         {
                                             throw;
                                         }
@@ -503,7 +458,7 @@ namespace SharpCifs.Smb
                                             ex = se;
                                             try
                                             {
-                                                transport.Disconnect(true);
+                                                _transport.Disconnect(true);
                                             }
                                             catch (Exception)
                                             {
@@ -519,10 +474,10 @@ namespace SharpCifs.Smb
                                         {
                                             throw ex;
                                         }
-                                        Uid = response.Uid;
+                                        _uid = response.Uid;
                                         if (request.Digest != null)
                                         {
-                                            transport.Digest = request.Digest;
+                                            _transport.Digest = request.Digest;
                                         }
                                         token = response.Blob;
                                     }
@@ -537,52 +492,52 @@ namespace SharpCifs.Smb
                     }
                     while (state != 0);
                 }
-                catch (SmbException se)
+                catch (SmbException)
                 {
                     Logoff(true);
-                    ConnectionState = 0;
+                    _connectionState = 0;
                     throw;
                 }
                 finally
                 {
-                    Runtime.NotifyAll(transport);
+                    Runtime.NotifyAll(_transport);
                 }
             }
         }
 
         internal void Logoff(bool inError)
         {
-            lock (Transport())
+            lock (Transport)
             {
-                if (ConnectionState != 2)
+                if (_connectionState != 2)
                 {
                     // not-connected
                     return;
                 }
-                ConnectionState = 3;
+                _connectionState = 3;
                 // disconnecting
                 NetbiosName = null;
 
-                foreach (SmbTree t in Trees)
+                foreach (SmbTree t in _trees)
                 {
                     t.TreeDisconnect(inError);
                 }
 
-                if (!inError && transport.Server.Security != SmbConstants.SecurityShare)
+                if (!inError && _transport.Server.Security != SmbConstants.SecurityShare)
                 {
                     SmbComLogoffAndX request = new SmbComLogoffAndX(null);
-                    request.Uid = Uid;
+                    request.Uid = _uid;
                     try
                     {
-                        transport.Send(request, null);
+                        _transport.Send(request, null);
                     }
                     catch (SmbException)
                     {
                     }
-                    Uid = 0;
+                    _uid = 0;
                 }
-                ConnectionState = 0;
-                Runtime.NotifyAll(transport);
+                _connectionState = 0;
+                Runtime.NotifyAll(_transport);
             }
         }
 
@@ -590,8 +545,8 @@ namespace SharpCifs.Smb
         {
             return "SmbSession[accountName=" + Auth.Username
                             + ",primaryDomain=" + Auth.Domain
-                            + ",uid=" + Uid
-                            + ",connectionState=" + ConnectionState + "]";
+                            + ",uid=" + _uid
+                            + ",connectionState=" + _connectionState + "]";
         }
     }
 }

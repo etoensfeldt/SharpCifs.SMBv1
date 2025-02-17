@@ -851,7 +851,7 @@ namespace SharpCifs.Smb
                 return;
             }
             Connect0();
-            DfsReferral dr = Dfs.Resolve(Tree.Session.transport.TconHostName, Tree.Share, Unc, Auth);
+            DfsReferral dr = Dfs.Resolve(Tree.Session.Transport.TconHostName, Tree.Share, Unc, Auth);
             if (dr != null)
             {
                 string service = null;
@@ -1167,9 +1167,9 @@ namespace SharpCifs.Smb
             UniAddress addr;
             addr = GetAddress();
 
-            if (Tree != null && Tree.Session.transport.Address.Equals(addr))
+            if (Tree != null && Tree.Session.Transport.Address.Equals(addr))
             {
-                trans = Tree.Session.transport;
+                trans = Tree.Session.Transport;
             }
             else
             {
@@ -1241,7 +1241,7 @@ namespace SharpCifs.Smb
         /// <exception cref="System.IO.IOException"></exception>
         public void Connect()
         {
-            if (this.IsConnected() && this.Tree.Session.transport.TconHostName == null)
+            if (this.IsConnected() && this.Tree.Session.Transport.TconHostName == null)
             {
                 /* Tree thinks it is connected but transport disconnected
                  * under it, reset tree to reflect the truth.
@@ -1300,7 +1300,7 @@ namespace SharpCifs.Smb
             {
                 Log.WriteLine("open0: " + Unc);
             }
-            if (Tree.Session.transport.HasCapability(SmbConstants.CapNtSmbs))
+            if (Tree.Session.Transport.HasCapability(SmbConstants.CapNtSmbs))
             {
                 SmbComNtCreateAndXResponse response = new SmbComNtCreateAndXResponse();
                 SmbComNtCreateAndX request = new SmbComNtCreateAndX(Unc,
@@ -1785,7 +1785,7 @@ namespace SharpCifs.Smb
             {
                 Log.WriteLine("queryPath: " + path);
             }
-            if (Tree.Session.transport.HasCapability(SmbConstants.CapNtSmbs))
+            if (Tree.Session.Transport.HasCapability(SmbConstants.CapNtSmbs))
             {
                 Trans2QueryPathInformationResponse response
                     = new Trans2QueryPathInformationResponse(infoLevel);
@@ -1795,7 +1795,7 @@ namespace SharpCifs.Smb
             else
             {
                 SmbComQueryInformationResponse response
-                    = new SmbComQueryInformationResponse(Tree.Session.transport.Server.ServerTimeZone
+                    = new SmbComQueryInformationResponse(Tree.Session.Transport.Server.ServerTimeZone
                                                          * 1000
                                                          * 60L);
                 Send(new SmbComQueryInformation(path), response);
@@ -2559,7 +2559,7 @@ namespace SharpCifs.Smb
             if (listType == 0)
             {
                 Connect0();
-                req = new NetServerEnum2(Tree.Session.transport.Server.OemDomainName,
+                req = new NetServerEnum2(Tree.Session.Transport.Server.OemDomainName,
                                          NetServerEnum2.SvTypeDomainEnum);
                 resp = new NetServerEnum2Response();
             }
@@ -2790,7 +2790,7 @@ namespace SharpCifs.Smb
                 this._enclosing = enclosing;
                 UseNtSmbs = this._enclosing.Tree
                                            .Session
-                                           .transport
+                                           .Transport
                                            .HasCapability(SmbConstants.CapNtSmbs);
                 if (UseNtSmbs)
                 {
@@ -3073,8 +3073,8 @@ namespace SharpCifs.Smb
             w = new WriterThread(this);
             w.Start(true);
 
-            SmbTransport t1 = Tree.Session.transport;
-            SmbTransport t2 = dest.Tree.Session.transport;
+            SmbTransport t1 = Tree.Session.Transport;
+            SmbTransport t2 = dest.Tree.Session.Transport;
             if (t1.SndBufSize < t2.SndBufSize)
             {
                 t2.SndBufSize = t1.SndBufSize;

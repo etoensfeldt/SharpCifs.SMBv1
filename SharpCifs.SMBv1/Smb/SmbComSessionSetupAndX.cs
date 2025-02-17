@@ -54,9 +54,9 @@ namespace SharpCifs.Smb
             Command = SmbComSessionSetupAndx;
             this.Session = session;
             this.Cred = cred;
-            _sessionKey = session.transport.SessionKey;
-            _capabilities = session.transport.Capabilities;
-            if (session.transport.Server.Security == SmbConstants.SecurityUser)
+            _sessionKey = session.Transport.SessionKey;
+            _capabilities = session.Transport.Capabilities;
+            if (session.Transport.Server.Security == SmbConstants.SecurityUser)
             {
                 if (cred is NtlmPasswordAuthentication)
                 {
@@ -69,10 +69,10 @@ namespace SharpCifs.Smb
                     }
                     else
                     {
-                        if (session.transport.Server.EncryptedPasswords)
+                        if (session.Transport.Server.EncryptedPasswords)
                         {
-                            _lmHash = auth.GetAnsiHash(session.transport.Server.EncryptionKey);
-                            _ntHash = auth.GetUnicodeHash(session.transport.Server.EncryptionKey);
+                            _lmHash = auth.GetAnsiHash(session.Transport.Server.EncryptionKey);
+                            _ntHash = auth.GetUnicodeHash(session.Transport.Server.EncryptionKey);
                             // prohibit HTTP auth attempts for the null session
                             if (_lmHash.Length == 0 && _ntHash.Length == 0)
                             {
@@ -124,7 +124,7 @@ namespace SharpCifs.Smb
             }
             else
             {
-                if (session.transport.Server.Security == SmbConstants.SecurityShare)
+                if (session.Transport.Server.Security == SmbConstants.SecurityShare)
                 {
                     if (cred is NtlmPasswordAuthentication)
                     {
@@ -158,9 +158,9 @@ namespace SharpCifs.Smb
         internal override int WriteParameterWordsWireFormat(byte[] dst, int dstIndex)
         {
             int start = dstIndex;
-            WriteInt2(Session.transport.SndBufSize, dst, dstIndex);
+            WriteInt2(Session.Transport.SndBufSize, dst, dstIndex);
             dstIndex += 2;
-            WriteInt2(Session.transport.MaxMpxCount, dst, dstIndex);
+            WriteInt2(Session.Transport.MaxMpxCount, dst, dstIndex);
             dstIndex += 2;
             WriteInt2(SmbConstants.VcNumber, dst, dstIndex);
             dstIndex += 2;
@@ -223,8 +223,8 @@ namespace SharpCifs.Smb
         {
             string result = "SmbComSessionSetupAndX["
                                 + base.ToString()
-                                + ",snd_buf_size=" + Session.transport.SndBufSize
-                                + ",maxMpxCount=" + Session.transport.MaxMpxCount
+                                + ",snd_buf_size=" + Session.Transport.SndBufSize
+                                + ",maxMpxCount=" + Session.Transport.MaxMpxCount
                                 + ",VC_NUMBER=" + SmbConstants.VcNumber
                                 + ",sessionKey=" + _sessionKey
                                 + ",lmHash.length=" + (_lmHash == null

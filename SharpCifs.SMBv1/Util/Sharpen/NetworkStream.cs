@@ -5,7 +5,7 @@ namespace SharpCifs.Util.Sharpen
 {
     public class NetworkStream : Stream
     {
-        SocketEx _socket;
+        private SocketEx _socket;
 
         public NetworkStream(SocketEx socket)
         {

@@ -131,7 +131,7 @@ namespace SharpCifs.Util.Sharpen
         }
 
 
-        public bool Equals(Thread thread)
+        public bool Equals(Thread? thread)
         {
             if (thread == null)
                 return false;

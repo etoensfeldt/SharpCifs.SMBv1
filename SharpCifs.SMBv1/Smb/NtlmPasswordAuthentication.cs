@@ -755,9 +755,8 @@ namespace SharpCifs.Smb
         /// </remarks>
         public override bool Equals(object obj)
         {
-            if (obj is NtlmPasswordAuthentication)
+            if (obj is NtlmPasswordAuthentication ntlm)
             {
-                NtlmPasswordAuthentication ntlm = (NtlmPasswordAuthentication)obj;
                 if (ntlm.Domain.ToUpper().Equals(Domain.ToUpper())
                     && ntlm.Username.ToUpper().Equals(Username.ToUpper()))
                 {

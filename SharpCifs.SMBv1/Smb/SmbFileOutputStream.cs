@@ -192,8 +192,8 @@ namespace SharpCifs.Smb
                       SmbFile.AttrNormal,
                       0);
             this._openFlags &= ~(SmbFile.OCreat | SmbFile.OTrunc);
-            _writeSize = file.Tree.Session.transport.SndBufSize - 70;
-            _useNtSmbs = file.Tree.Session.transport.HasCapability(SmbConstants.CapNtSmbs);
+            _writeSize = file.Tree.Session.Transport.SndBufSize - 70;
+            _useNtSmbs = file.Tree.Session.Transport.HasCapability(SmbConstants.CapNtSmbs);
             if (_useNtSmbs)
             {
                 _reqx = new SmbComWriteAndX();
