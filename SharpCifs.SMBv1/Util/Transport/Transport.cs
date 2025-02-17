@@ -140,11 +140,11 @@ namespace SharpCifs.Util.Transport
             }
         }
 
-        private void Loop()
+        private void Loop(Thread thread)
         {
-            while (Thread.CurrentThread().Equals(_thread))
+            while (Thread.CurrentThread().Equals(thread))
             {
-                if (_thread.IsCanceled)
+                if (thread.IsCanceled)
                     break;
 
                 try
@@ -157,7 +157,7 @@ namespace SharpCifs.Util.Transport
 
                     lock (this)
                     {
-                        if (_thread.IsCanceled)
+                        if (thread.IsCanceled)
                             break;
 
                         Response response = (Response)ResponseMap.Get(key);
@@ -173,7 +173,7 @@ namespace SharpCifs.Util.Transport
                         {
                             DoRecv(response);
 
-                            if (_thread.IsCanceled)
+                            if (thread.IsCanceled)
                                 break;
 
                             response.IsReceived = true;
@@ -215,6 +215,7 @@ namespace SharpCifs.Util.Transport
         {
             lock (this)
             {
+                Thread? thread = null;
                 try
                 {
                     switch (State)
@@ -246,41 +247,43 @@ namespace SharpCifs.Util.Transport
                     State = 1;
                     Te = null;
 
-                    Thread thread = new(this);
+                    thread = new(this);
                     ClearThread(thread);
                     
-                    lock (_thread)
+                    lock (thread)
                     {
                         thread.Start(true);
 
-                        Runtime.Wait(_thread, timeout);
-                        switch (State)
-                        {
-                            case 1:
-                                {
-                                    State = 0;
-                                    ClearThread();
-                                    throw new TransportException("Connection timeout");
-                                }
+                        if (!thread.IsCanceled)
+                            Runtime.Wait(thread, timeout);
+                    }
 
-                            case 2:
-                                {
-                                    if (Te != null)
-                                    {
-                                        State = 4;
-                                        ClearThread();
-                                        throw Te;
-                                    }
-                                    State = 3;
-                                    return;
-                                }
+                    switch (State)
+                    {
+                        case 1:
+                        {
+                            State = 0;
+                            CompareClearThread(thread);
+                            throw new TransportException("Connection timeout");
+                        }
+
+                        case 2:
+                        {
+                            if (Te != null)
+                            {
+                                State = 4;
+                                CompareClearThread(thread);
+                                throw Te;
+                            }
+                            State = 3;
+                            return;
                         }
                     }
                 }
                 catch (Exception ie)
                 {
                     State = 0;
-                    ClearThread();
+                    CompareClearThread(thread);
                     throw new TransportException(ie);
                 }
                 finally
@@ -292,7 +295,7 @@ namespace SharpCifs.Util.Transport
                             Log.WriteLine("Invalid state: " + State);
                         }
                         State = 0;
-                        ClearThread();
+                        CompareClearThread(thread);
                     }
                 }
             }
@@ -468,7 +471,7 @@ namespace SharpCifs.Util.Transport
             if (runThread.IsCanceled)
                 return;
 
-            Loop();
+            Loop(runThread);
         }
 
         public override string ToString()
@@ -479,8 +482,23 @@ namespace SharpCifs.Util.Transport
         private void ClearThread(Thread? replacement = null)
         {
             Thread? oldThread = System.Threading.Interlocked.Exchange(ref _thread, replacement);
-            oldThread?.Cancel();
+            oldThread?.Cancel(true);
             oldThread?.Dispose();
+        }
+
+        private void CompareClearThread(Thread comparand, Thread? replacement = null)
+        {
+            if (System.Threading.Interlocked.CompareExchange(ref _thread, replacement, comparand) == comparand)
+            {
+                comparand.Cancel(true);
+                comparand.Dispose();
+            }
+            else
+            {
+                // Comparand thread already disposed
+                // Wait for cancel to finish
+                comparand.Cancel(true);
+            }
         }
     }
 }

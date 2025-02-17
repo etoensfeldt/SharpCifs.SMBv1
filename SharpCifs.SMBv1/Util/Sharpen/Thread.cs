@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -75,9 +76,9 @@ namespace SharpCifs.Util.Sharpen
         }
 
 
-        public static void Sleep(long milis, CancellationToken token)
+        public static void Sleep(long milis, CancellationToken token = default)
         {
-            System.Threading.Tasks.Task.Delay((int)milis, token).Wait();
+            Task.Delay((int)milis, token).ContinueWith(_ => { }).Wait();
         }
 
 
@@ -88,7 +89,7 @@ namespace SharpCifs.Util.Sharpen
 
             bool hasStarted = false;
             
-            _ = System.Threading.Tasks.Task.Run(() =>
+            _ = Task.Run(() =>
             {
                 WrapperThread = this;
                 _id = Environment.CurrentManagedThreadId;
@@ -98,6 +99,10 @@ namespace SharpCifs.Util.Sharpen
                 try
                 {
                     _runnable.Run();
+                }
+                catch (TaskCanceledException)
+                {
+                    Console.WriteLine("SMBv1 thread cancelled while running");
                 }
                 catch (Exception exception)
                 {
@@ -118,11 +123,11 @@ namespace SharpCifs.Util.Sharpen
 
         public void Cancel(bool isSynced = false)
         {
-            _canceller?.Cancel(true);
+            Interlocked.Exchange(ref _canceller, null)?.Cancel(true);
 
             if (isSynced)
                 while (IsRunning)
-                    Sleep(300, default);
+                    Sleep(300);
         }
 
 
