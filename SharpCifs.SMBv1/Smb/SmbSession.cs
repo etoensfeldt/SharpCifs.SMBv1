@@ -137,14 +137,14 @@ namespace SharpCifs.Smb
 
         /// <exception cref="SharpCifs.Smb.SmbException"></exception>
         /// <exception cref="UnknownHostException"></exception>
-        public static byte[] GetChallenge(UniAddress dc)
+        public static byte[]? GetChallenge(UniAddress dc)
         {
             return GetChallenge(dc, 0);
         }
 
         /// <exception cref="SharpCifs.Smb.SmbException"></exception>
         /// <exception cref="UnknownHostException"></exception>
-        public static byte[] GetChallenge(UniAddress dc, int port)
+        public static byte[]? GetChallenge(UniAddress dc, int port)
         {
             SmbTransport trans = SmbTransport.GetSmbTransport(dc, port);
             trans.Connect();
