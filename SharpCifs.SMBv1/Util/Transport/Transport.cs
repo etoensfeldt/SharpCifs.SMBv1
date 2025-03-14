@@ -184,7 +184,7 @@ namespace SharpCifs.Util.Transport
 
                     try
                     {
-                        Disconnect(hard, false);
+                        Disconnect(hard);
                     }
                     catch (IOException ioe)
                     {
@@ -296,7 +296,7 @@ namespace SharpCifs.Util.Transport
         }
 
         /// <exception cref="System.IO.IOException"></exception>
-        public virtual void Disconnect(bool hard, bool sync = true)
+        public virtual void Disconnect(bool hard)
         {
             if (hard)
             {
@@ -333,7 +333,7 @@ namespace SharpCifs.Util.Transport
 
                     case 4:
                         {
-                            ClearThread(sync);
+                            ClearThread();
                             _state = 0;
                             break;
                         }
@@ -344,7 +344,7 @@ namespace SharpCifs.Util.Transport
                             {
                                 Log.WriteLine("Invalid state: " + _state);
                             }
-                            ClearThread(sync);
+                            ClearThread();
                             _state = 0;
                             break;
                         }
@@ -392,7 +392,7 @@ namespace SharpCifs.Util.Transport
 
                     case 4:
                         {
-                            ClearThread(sync);
+                            ClearThread();
                             _state = 0;
                             break;
                         }
@@ -403,7 +403,7 @@ namespace SharpCifs.Util.Transport
                             {
                                 Log.WriteLine("Invalid state: " + _state);
                             }
-                            ClearThread(sync);
+                            ClearThread();
                             _state = 0;
                             break;
                         }
@@ -470,25 +470,29 @@ namespace SharpCifs.Util.Transport
             return _name;
         }
 
-        private void ClearThread(bool sync = true, Thread? replacement = null)
+        private void ClearThread(bool sync = false, Thread? replacement = null)
         {
             Thread? oldThread = Interlocked.Exchange(ref _thread, replacement);
             oldThread?.Cancel(sync);
             oldThread?.Dispose();
         }
 
-        private void CompareClearThread(Thread comparand, Thread? replacement = null)
+        private void CompareClearThread(Thread comparand, bool sync = false, Thread? replacement = null)
         {
             if (Interlocked.CompareExchange(ref _thread, replacement, comparand) == comparand)
             {
-                comparand.Cancel(true);
+                comparand.Cancel(sync);
                 comparand.Dispose();
             }
-            else
+            else if (sync)
             {
                 // Comparand thread already disposed
                 // Wait for cancel to finish
-                comparand.Cancel(true);
+                comparand.Cancel(sync);
+            }
+            else
+            {
+                // Already disposed/cancelled and not waiting on sync
             }
         }
     }
