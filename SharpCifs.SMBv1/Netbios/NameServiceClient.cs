@@ -260,7 +260,7 @@ namespace SharpCifs.Netbios
                     }
 
                     _thread = new Thread(this);
-                    _thread.Start(true);
+                    _thread.Start();
                 }
             }
         }
@@ -305,14 +305,14 @@ namespace SharpCifs.Netbios
 
 
         private int _recievedLength = -1;
-        public virtual void Run()
+        public virtual void Run(Thread current)
         {
             int nameTrnId;
             NameServicePacket response;
 
             try
             {
-                while (Thread.CurrentThread().Equals(_thread))
+                while (current.Equals(_thread))
                 {
                     if (_thread.IsCanceled)
                         break;
@@ -785,7 +785,7 @@ namespace SharpCifs.Netbios
             }
 
             _thread = new Thread(this);
-            _thread.Start(true);
+            _thread.Start();
 
             _autoResetWaitReceive.WaitOne();
 

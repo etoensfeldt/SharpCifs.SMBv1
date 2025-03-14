@@ -86,7 +86,7 @@ namespace SharpCifs.Util.Sharpen
 
             ~ShutdownHook()
             {
-                Runnable.Run();
+                Runnable.Run(Thread.Empty);
             }
         }
 

@@ -135,11 +135,8 @@ namespace SharpCifs.Util.Transport
 
         private void Loop(Thread thread)
         {
-            while (Thread.CurrentThread().Equals(thread))
+            while (!thread.IsCanceled)
             {
-                if (thread.IsCanceled)
-                    break;
-
                 try
                 {
                     ServerMessageBlock? key = PeekKey();
@@ -187,7 +184,7 @@ namespace SharpCifs.Util.Transport
 
                     try
                     {
-                        Disconnect(hard);
+                        Disconnect(hard, false);
                     }
                     catch (IOException ioe)
                     {
@@ -241,11 +238,10 @@ namespace SharpCifs.Util.Transport
                     _transportEx = null;
 
                     thread = new(this);
-                    ClearThread(thread);
-                    
                     lock (thread)
                     {
-                        thread.Start(true);
+                        ClearThread(true, thread);
+                        thread.Start();
 
                         if (!thread.IsCanceled)
                             Runtime.Wait(thread, timeout);
@@ -300,9 +296,8 @@ namespace SharpCifs.Util.Transport
         }
 
         /// <exception cref="System.IO.IOException"></exception>
-        public virtual void Disconnect(bool hard)
+        public virtual void Disconnect(bool hard, bool sync = true)
         {
-
             if (hard)
             {
                 IOException? ioe = null;
@@ -338,7 +333,7 @@ namespace SharpCifs.Util.Transport
 
                     case 4:
                         {
-                            ClearThread();
+                            ClearThread(sync);
                             _state = 0;
                             break;
                         }
@@ -349,7 +344,7 @@ namespace SharpCifs.Util.Transport
                             {
                                 Log.WriteLine("Invalid state: " + _state);
                             }
-                            ClearThread();
+                            ClearThread(sync);
                             _state = 0;
                             break;
                         }
@@ -397,7 +392,7 @@ namespace SharpCifs.Util.Transport
 
                     case 4:
                         {
-                            ClearThread();
+                            ClearThread(sync);
                             _state = 0;
                             break;
                         }
@@ -408,7 +403,7 @@ namespace SharpCifs.Util.Transport
                             {
                                 Log.WriteLine("Invalid state: " + _state);
                             }
-                            ClearThread();
+                            ClearThread(sync);
                             _state = 0;
                             break;
                         }
@@ -420,10 +415,8 @@ namespace SharpCifs.Util.Transport
             }
         }
 
-        public virtual void Run()
+        public virtual void Run(Thread runThread)
         {
-            Thread runThread = Thread.CurrentThread();
-
             if (runThread.IsCanceled)
                 return;
 
@@ -477,10 +470,10 @@ namespace SharpCifs.Util.Transport
             return _name;
         }
 
-        private void ClearThread(Thread? replacement = null)
+        private void ClearThread(bool sync = true, Thread? replacement = null)
         {
             Thread? oldThread = Interlocked.Exchange(ref _thread, replacement);
-            oldThread?.Cancel(true);
+            oldThread?.Cancel(sync);
             oldThread?.Dispose();
         }
 

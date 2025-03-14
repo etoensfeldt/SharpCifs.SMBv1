@@ -1,7 +1,8 @@
-namespace SharpCifs.Util.Sharpen
+namespace SharpCifs.Util.Sharpen;
+
+#nullable enable
+
+public interface IRunnable
 {
-    public interface IRunnable
-    {
-        void Run();
-    }
+    void Run(Thread current);
 }

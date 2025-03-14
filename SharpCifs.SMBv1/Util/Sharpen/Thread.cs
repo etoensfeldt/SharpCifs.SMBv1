@@ -1,3 +1,4 @@
+using SharpCifs.Util.DbsHelper;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,31 +9,18 @@ namespace SharpCifs.Util.Sharpen
 {
     public class Thread : IRunnable
     {
-        [ThreadStatic]
-        private static Thread? WrapperThread;
-
-        public static Thread CurrentThread()
-        {
-            if (WrapperThread == null)
-            {
-                LogStream.GetInstance().WriteLine("Wrapper thread for {0} was not set", Environment.CurrentManagedThreadId);
-                WrapperThread = new Thread(Environment.CurrentManagedThreadId);
-            }
-
-            return WrapperThread;
-        }
-
         public bool IsCanceled => _cancellationToken.IsCancellationRequested;
-        public bool IsRunning => _isRunning != 0;
+        public bool IsRunning => !_task.IsCompleted;
 
         private readonly IRunnable _runnable;
         private readonly CancellationToken _cancellationToken;
         private readonly string _name;
 
         private CancellationTokenSource? _canceller;
-        private int? _id = null;
-        private int _isRunning = 0; // 0 == false
+        private Task _task = Task.CompletedTask;
 
+        private static readonly Thread _empty = new();
+        public static Thread Empty => _empty;
 
         public Thread() : this(null, null)
         {
@@ -57,48 +45,26 @@ namespace SharpCifs.Util.Sharpen
             _name = name ?? string.Empty;
         }
 
-
-        private Thread(int threadId)
-        {
-            _id = threadId;
-            _runnable = this;
-            _canceller = new();
-            _cancellationToken = _canceller.Token;
-            _name = string.Empty;
-        }
-
-
         public string GetName() => _name;
 
 
-        public virtual void Run()
+        public virtual void Run(Thread current)
         {
         }
 
-
-        public static void Sleep(long milis, CancellationToken token = default)
+        public void Sleep(int milis)
         {
-            Task.Delay((int)milis, token).ContinueWith(_ => { }).Wait();
+            System.Threading.Thread.Sleep(milis);
         }
 
 
-        public void Start(bool isSynced = false)
+        public void Start()
         {
-            if (Interlocked.CompareExchange(ref _isRunning, 1, 0) == 1)
-                throw new InvalidOperationException("Thread already started.");
-
-            bool hasStarted = false;
-            
-            _ = Task.Run(() =>
+            Task task = new(() =>
             {
-                WrapperThread = this;
-                _id = Environment.CurrentManagedThreadId;
-
-                hasStarted = true;
-                
                 try
                 {
-                    _runnable.Run();
+                    _runnable.Run(this);
                 }
                 catch (TaskCanceledException)
                 {
@@ -110,45 +76,40 @@ namespace SharpCifs.Util.Sharpen
                 }
                 finally
                 {
-                    _isRunning = 0;                    
                     Interlocked.Exchange(ref _canceller, null)?.Dispose();
                 }
             }, _cancellationToken);
 
-            if (isSynced)
-                while (!hasStarted)
-                    Sleep(300, _cancellationToken);
+            if (Interlocked.CompareExchange(ref _task, task, Task.CompletedTask) != Task.CompletedTask)
+                throw new InvalidOperationException("Thread already started.");
+
+            task.Start(TaskScheduler.Default);
         }
 
 
-        public void Cancel(bool isSynced = false)
+        public void Cancel(bool isSynced)
         {
-            Interlocked.Exchange(ref _canceller, null)?.Cancel(true);
+            var canceller = Interlocked.Exchange(ref _canceller, null);
+            canceller?.Cancel(true);
+            canceller?.Dispose();
 
             if (isSynced)
                 while (IsRunning)
-                    Sleep(300);
+                    Sleep(100);
         }
 
 
         public bool Equals(Thread? thread)
         {
-            if (thread == null)
-                return false;
-
-            if (_id == null
-                || thread._id == null)
-                return false;
-
-            return _id == thread._id;
+            return _task is not null &&
+                   thread?._task is not null &&
+                   _task.Id == thread._task.Id;
         }
 
 
         public void Dispose()
         {
             Interlocked.Exchange(ref _canceller, null)?.Dispose();
-            _isRunning = 0;
-            _id = null;
         }
     }
 }

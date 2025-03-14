@@ -2818,7 +2818,7 @@ namespace SharpCifs.Smb
                 }
             }
 
-            public override void Run()
+            public override void Run(Thread current)
             {
                 lock (this)
                 {
@@ -3071,7 +3071,7 @@ namespace SharpCifs.Smb
             {
             }
             w = new WriterThread(this);
-            w.Start(true);
+            w.Start();
 
             SmbTransport t1 = Tree.Session.Transport;
             SmbTransport t2 = dest.Tree.Session.Transport;

@@ -118,7 +118,7 @@ namespace SharpCifs.Util.Sharpen
                         r = _pendingTasks.Dequeue();
                     }
                     if (r != null)
-                        r.Run();
+                        r.Run(Thread.Empty);
                 }
                 //supress all errors, anyway
                 //catch (ST.ThreadAbortException) {
@@ -175,7 +175,7 @@ namespace SharpCifs.Util.Sharpen
             _action = a;
         }
 
-        public void Run()
+        public void Run(Thread current)
         {
             _action();
         }

@@ -193,7 +193,7 @@ namespace SharpCifs
                 this.Svr = svr;
             }
 
-            public override void Run()
+            public override void Run(Thread current)
             {
                 try
                 {
