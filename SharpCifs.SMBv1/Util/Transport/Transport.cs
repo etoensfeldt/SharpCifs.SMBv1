@@ -185,7 +185,7 @@ namespace SharpCifs.Util.Transport
                 catch (Exception ex)
                 {
                     string msg = ex.Message;
-                    bool timeout = msg != null && msg.Equals("Read timed out");
+                    bool timeout = ex is TimeoutException;
                     bool hard = timeout == false;
 
                     if (!timeout && Log.Level >= 3)

@@ -29,8 +29,7 @@ namespace SharpCifs.Util.Sharpen
         {
             get
             {
-                if (this._canceller?.IsCancellationRequested == true
-                    && !this._isCanceled)
+                if (this._token.IsCancellationRequested && !this._isCanceled)
                 {
                     this._isCanceled = true;
                 }
@@ -43,6 +42,7 @@ namespace SharpCifs.Util.Sharpen
         private ThreadGroup _tgroup;
         private System.Threading.Tasks.Task _task = null;
         private CancellationTokenSource _canceller = null;
+        private CancellationToken _token = default;
 
         private string _name = string.Empty;
         private bool _isBackground = true;
@@ -177,9 +177,9 @@ namespace SharpCifs.Util.Sharpen
         }
 
 
-        public static void Sleep(long milis)
+        public static void Sleep(int milis)
         {
-            System.Threading.Tasks.Task.Delay((int) milis).Wait();
+            System.Threading.Thread.Sleep(milis);
         }
 
 
@@ -188,8 +188,11 @@ namespace SharpCifs.Util.Sharpen
             if (this._isRunning)
                 throw new InvalidOperationException("Thread Already started.");
 
-            this._canceller = new CancellationTokenSource();
-            
+            CancellationTokenSource canceller = new();
+            this._token = canceller.Token;
+            this._canceller = canceller;
+            bool hasStarted = false;
+
             this._task = System.Threading.Tasks.Task.Run(() =>
             {
                 Thread.WrapperThread = this;
@@ -197,6 +200,7 @@ namespace SharpCifs.Util.Sharpen
 
                 //Log.Out("Thread.Start - Task Start");
                 this._isRunning = true;
+                hasStarted = true;
                 
                 try
                 {
@@ -219,12 +223,12 @@ namespace SharpCifs.Util.Sharpen
 
                     //Log.Out("Thread.Start - Task Close Completed");
                 }
-            }, this._canceller.Token);
+            }, this._token);
 
             //同期的に実行するとき、動作中フラグONまで待つ。
             if (isSynced)
-                while (!this._isRunning)
-                    System.Threading.Tasks.Task.Delay(300).GetAwaiter().GetResult();
+                while (!hasStarted && !this._token.IsCancellationRequested)
+                    Sleep(300);
         }
 
 
@@ -238,7 +242,7 @@ namespace SharpCifs.Util.Sharpen
             //同期的に実行するとき、動作中フラグOFFまで待つ。
             if (isSynced)
                 while (this._isRunning)
-                    System.Threading.Tasks.Task.Delay(300).GetAwaiter().GetResult();
+                    Sleep(300);
         }
 
 
