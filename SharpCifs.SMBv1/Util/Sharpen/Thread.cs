@@ -78,7 +78,7 @@ namespace SharpCifs.Util.Sharpen
                 {
                     Interlocked.Exchange(ref _canceller, null)?.Dispose();
                 }
-            }, _cancellationToken);
+            }, _cancellationToken, TaskCreationOptions.LongRunning);
 
             if (Interlocked.CompareExchange(ref _task, task, Task.CompletedTask) != Task.CompletedTask)
                 throw new InvalidOperationException("Thread already started.");
